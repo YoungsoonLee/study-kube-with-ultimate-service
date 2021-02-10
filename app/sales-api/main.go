@@ -39,6 +39,11 @@ func run(log *log.Logger) error {
 			WriteTimeout    time.Duration `conf:"default:5s"`
 			ShutdownTimeout time.Duration `conf:"default:5s"`
 		}
+		Auth struct {
+			KeyID          string `conf:"default:1234567890-0987654321"`
+			PrivateKeyFile string `connf:"default:/app/private.pem"`
+			Algorithm      string `conf:"default:RS256"`
+		}
 	}
 
 	cfg.Version.SVN = build
