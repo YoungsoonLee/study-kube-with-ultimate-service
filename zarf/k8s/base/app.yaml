@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-api
+spec:
+  selector:
+    matchLabels:
+      app: sales-api
+  template:
+    metadata:
+      labels:
+        app: sales-api
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostNetwork: true
+      containers:
+      - name: zipkin
+        image: openzipkin/zipkin:2.21
+        ports:
+          - name: zipkin
+            containerPort: 9411
+      - name: app
+        image: sales-api-amd64:1.0
+        env:
+          - name: SALES_DB_HOST
+            valueForm:
+              configMapKeyRef:
+                name: app-config
+                key: db_host
+                
