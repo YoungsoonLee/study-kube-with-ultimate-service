@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/YoungsoonLee/study-kube-with-ultimate-service/app/sales-api/handlers"
+	"github.com/YoungsoonLee/study-kube-with-ultimate-service/foundation/database"
 	"github.com/ardanlabs/conf"
 	"github.com/pkg/errors"
 )
@@ -43,6 +44,13 @@ func run(log *log.Logger) error {
 			KeyID          string `conf:"default:1234567890-0987654321"`
 			PrivateKeyFile string `connf:"default:/app/private.pem"`
 			Algorithm      string `conf:"default:RS256"`
+		}
+		DB struct {
+			User       string `conf:"default:postgres"`
+			Password   string `conf:"default:postgres,noprint"`
+			Host       string `conf:"default:db"`
+			Name       string `conf:"default:postgres"`
+			DisableTLS bool   `conf:"default:true"`
 		}
 	}
 
@@ -80,6 +88,27 @@ func run(log *log.Logger) error {
 	}
 	log.Printf("main: Config: \n%v\n", out)
 
+	// Authentication
+
+	// Start Database
+	log.Println("main: Initializing database support")
+	cfgDB := database.Config{
+		User:       cfg.DB.User,
+		Password:   cfg.DB.Password,
+		Host:       cfg.DB.Host,
+		Name:       cfg.DB.Name,
+		DisableTLS: cfg.DB.DisableTLS,
+	}
+
+	db, err := database.Open(cfgDB)
+	if err != nil {
+		return errors.Wrap(err, "connecting to db")
+	}
+	defer func() {
+		log.Printf("maind: Database Stopping : %s", cfg.DB.Host)
+		db.Close()
+	}()
+
 	// Start Debug Service
 	//
 	// /debug/pprof - Added to the default mux by importing the net/http/pprof package.
@@ -103,7 +132,7 @@ func run(log *log.Logger) error {
 
 	api := http.Server{
 		Addr:         cfg.Web.APIHost,
-		Handler:      handlers.API(build, shutdown, log),
+		Handler:      handlers.API(build, shutdown, log, db),
 		ReadTimeout:  cfg.Web.ReadTimeout,
 		WriteTimeout: cfg.Web.WriteTimeout,
 	}
